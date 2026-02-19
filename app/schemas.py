@@ -16,3 +16,17 @@ class FigmaFileResponse(BaseModel):
 class FigmaFilteredResponse(BaseModel):
     file_id: str
     filtered_json: dict
+
+
+class GuideRequest(BaseModel):
+    figma_url: str
+    figma_token: str
+    language: str = "ru"
+    detail_level: str = "brief"
+    audience: str = "user"
+
+
+class GuideResponse(BaseModel):
+    file_id: str
+    markdown: str
+    guide_json: dict
