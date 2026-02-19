@@ -23,19 +23,19 @@ app.dependency_overrides[get_figma_client] = override_client
 
 def override_llm_client():
     def handler(request: httpx.Request) -> httpx.Response:
-        payload = {
-            "choices": [
-                {
-                    "message": {
-                        "content": "MARKDOWN:\nШаг 1. Тест\n\nJSON:\n{\"title\": \"Demo\", \"steps\": []}"
-                    }
-                }
-            ]
-        }
+        payload = [
+            {
+                "generated_text": "MARKDOWN:\nШаг 1. Тест\n\nJSON:\n{\"title\": \"Demo\", \"steps\": []}"
+            }
+        ]
         return httpx.Response(200, json=payload)
 
     transport = httpx.MockTransport(handler)
-    client = LLMClient(transport=transport)
+    client = LLMClient(
+        transport=transport,
+        provider="hf",
+        base_url="https://api-inference.huggingface.co/models/dim014/deepseek-r1-finetuned",
+    )
     try:
         yield client
     finally:

@@ -61,6 +61,11 @@ class FigmaClient:
             headers={"X-FIGMA-TOKEN": token},
         )
 
+        print(
+            "[figma] request_path=%s status=%s"
+            % (response.request.url.path, response.status_code)
+        )
+
         if response.status_code in (401, 403):
             raise FigmaAuthError("Invalid or unauthorized token")
         if response.status_code == 404:

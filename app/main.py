@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Generator
 
-from fastapi import Depends, FastAPI, HTTPException
+from fastapi import Depends, FastAPI, HTTPException, Request
 
 from app.figma import (
     FigmaAuthError,
@@ -25,6 +25,13 @@ from app.schemas import (
 )
 
 app = FastAPI(title="Figma UI User Guider", version="0.1.0")
+
+
+@app.middleware("http")
+async def log_requests(request: Request, call_next):
+    response = await call_next(request)
+    print(f"[request] {request.method} {request.url.path} -> {response.status_code}")
+    return response
 
 
 def get_figma_client() -> Generator[FigmaClient, None, None]:
