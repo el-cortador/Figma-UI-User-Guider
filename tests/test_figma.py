@@ -30,7 +30,7 @@ def test_extract_file_id_failure() -> None:
 
 def test_get_file_success() -> None:
     def handler(request: httpx.Request) -> httpx.Response:
-        assert request.url.path == "/files/AbCdEf1234"
+        assert request.url.path == "/v1/files/AbCdEf1234"
         assert request.headers.get("X-FIGMA-TOKEN") == "token"
         return httpx.Response(200, json={"name": "Demo"})
 
