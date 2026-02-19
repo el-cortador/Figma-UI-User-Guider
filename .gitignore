@@ -206,5 +206,6 @@ marimo/_static/
 marimo/_lsp/
 __marimo__/
 
-# Specs
+# Other
 specs.md
+figma-openapi.yaml

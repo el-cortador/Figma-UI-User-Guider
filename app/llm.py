@@ -53,6 +53,11 @@ class LLMClient:
             print(f"[llm] provider=hf base_url={self._client.base_url} path=")
             response = self._client.post("", json=payload, headers=headers)
             if response.status_code >= 400:
+                body = response.text[:300]
+                print(
+                    "[llm] hf_error status=%s body=%s"
+                    % (response.status_code, body)
+                )
                 raise LLMRequestError(f"LLM API error: {response.status_code}")
 
             data = response.json()

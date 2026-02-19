@@ -27,6 +27,10 @@ class FigmaBadUrlError(FigmaError):
     """Raised when Figma file id cannot be extracted from URL."""
 
 
+class FigmaRateLimitError(FigmaError):
+    """Raised when Figma API rate limit is exceeded."""
+
+
 def extract_file_id(value: str) -> str:
     if not value:
         raise FigmaBadUrlError("URL is empty")
@@ -61,15 +65,22 @@ class FigmaClient:
             headers={"X-FIGMA-TOKEN": token},
         )
 
+        rate_headers = {
+            key: value
+            for key, value in response.headers.items()
+            if "ratelimit" in key.lower() or key.lower() == "retry-after"
+        }
         print(
-            "[figma] request_path=%s status=%s"
-            % (response.request.url.path, response.status_code)
+            "[figma] request_path=%s status=%s rate=%s"
+            % (response.request.url.path, response.status_code, rate_headers)
         )
 
         if response.status_code in (401, 403):
             raise FigmaAuthError("Invalid or unauthorized token")
         if response.status_code == 404:
             raise FigmaNotFoundError("File not found")
+        if response.status_code == 429:
+            raise FigmaRateLimitError(f"Rate limit exceeded: {rate_headers}")
         if response.status_code >= 400:
             raise FigmaRequestError(f"Figma API error: {response.status_code}")
 

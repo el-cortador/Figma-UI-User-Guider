@@ -10,6 +10,7 @@ from app.figma import (
     FigmaClient,
     FigmaNotFoundError,
     FigmaRequestError,
+    FigmaRateLimitError,
     extract_file_id,
 )
 from app.filtering import filter_figma_json
@@ -67,6 +68,8 @@ def fetch_figma_file(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except FigmaRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except FigmaRateLimitError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
 @app.post("/figma/file/filtered", response_model=FigmaFilteredResponse)
@@ -87,6 +90,8 @@ def fetch_filtered_figma_file(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except FigmaRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except FigmaRateLimitError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
 
 
 @app.post("/guide/generate", response_model=GuideResponse)
@@ -116,6 +121,8 @@ def generate_guide(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except FigmaRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except FigmaRateLimitError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     except LLMRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
 
@@ -147,5 +154,7 @@ def export_guide(
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except FigmaRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except FigmaRateLimitError as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     except LLMRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
