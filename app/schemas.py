@@ -11,3 +11,8 @@ class FigmaFileRequest(BaseModel):
 class FigmaFileResponse(BaseModel):
     file_id: str
     figma_json: dict
+
+
+class FigmaFilteredResponse(BaseModel):
+    file_id: str
+    filtered_json: dict

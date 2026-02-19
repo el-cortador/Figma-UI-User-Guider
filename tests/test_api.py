@@ -43,3 +43,19 @@ def test_fetch_figma_file_bad_url() -> None:
         json={"figma_url": "https://example.com", "figma_token": "token"},
     )
     assert response.status_code == 400
+
+
+def test_fetch_filtered_figma_file_success() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/figma/file/filtered",
+        json={
+            "figma_url": "https://www.figma.com/file/AbCdEf1234/My-File",
+            "figma_token": "token",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["file_id"] == "AbCdEf1234"
+    assert "filtered_json" in data
