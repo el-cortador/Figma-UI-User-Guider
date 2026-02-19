@@ -208,4 +208,6 @@ __marimo__/
 
 # Other
 specs.md
+specs_*.md
 figma-openapi.yaml
+*.png
