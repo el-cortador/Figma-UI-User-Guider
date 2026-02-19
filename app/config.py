@@ -8,6 +8,7 @@ load_dotenv()
 
 FIGMA_API_BASE = os.getenv("FIGMA_API_BASE", "https://api.figma.com/v1")
 REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "15"))
+FIGMA_API_TOKEN = os.getenv("FIGMA_API_TOKEN", "")
 
 LLM_PROVIDER = os.getenv("LLM_PROVIDER", "hf")
 LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "dim014/deepseek-r1-finetuned")

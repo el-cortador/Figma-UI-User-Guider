@@ -1,0 +1,119 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  color: #0b0b0b;
+  background: #ffffff;
+}
+
+.page {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 32px 32px 64px;
+}
+
+.page__title {
+  font-size: 40px;
+  font-weight: 700;
+  text-align: center;
+  margin: 8px 0 40px;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.field__label {
+  font-size: 18px;
+}
+
+.field__input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: 12px;
+  border: 1.5px solid #111111;
+  font-size: 16px;
+  background: #ffffff;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+}
+
+.select {
+  position: relative;
+}
+
+.select::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 9px solid #111111;
+  transform: translateY(-30%);
+  pointer-events: none;
+}
+
+.select select {
+  appearance: none;
+}
+
+.button {
+  align-self: center;
+  padding: 14px 32px;
+  border-radius: 16px;
+  border: 1.5px solid #111111;
+  background: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  min-width: 360px;
+}
+
+.button--outline {
+  margin-top: 24px;
+}
+
+.result {
+  margin-top: 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.result__title {
+  font-size: 20px;
+  font-weight: 500;
+  margin: 0;
+}
+
+.result__box {
+  min-height: 220px;
+  border: 1.5px solid #111111;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 15px;
+  white-space: pre-wrap;
+}
+
+.result__box--error {
+  border-color: #d9342b;
+  color: #d9342b;
+}

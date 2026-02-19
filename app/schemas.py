@@ -20,7 +20,7 @@ class FigmaFilteredResponse(BaseModel):
 
 class GuideRequest(BaseModel):
     figma_url: str
-    figma_token: str
+    figma_token: str = ""
     language: str = "ru"
     detail_level: str = "brief"
     audience: str = "user"

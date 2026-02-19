@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Figma UI User Guider</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <h1 class="page__title">Figma UI User Guider</h1>
+
+      <section class="card">
+        <label class="field">
+          <span class="field__label">Ссылка на макет в Figma</span>
+          <input
+            class="field__input"
+            id="figma-url"
+            type="url"
+            placeholder="https://www.figma.com/file/..."
+          />
+        </label>
+
+        <div class="grid">
+          <label class="field">
+            <span class="field__label">Уровень детализации</span>
+            <div class="select">
+              <select class="field__input" id="detail-level" aria-label="Уровень детализации">
+                <option value="brief">Краткий</option>
+                <option value="detailed">Подробный</option>
+              </select>
+            </div>
+          </label>
+
+          <label class="field">
+            <span class="field__label">Целевая аудитория</span>
+            <div class="select">
+              <select class="field__input" id="audience" aria-label="Целевая аудитория">
+                <option value="user">Пользователь</option>
+                <option value="developer">Разработчик</option>
+                <option value="engineer">Инженер</option>
+              </select>
+            </div>
+          </label>
+        </div>
+
+        <button class="button" id="generate-btn" type="button">
+          Сгенерировать руководство пользователя
+        </button>
+      </section>
+
+      <section class="result">
+        <h2 class="result__title">Результат генерации</h2>
+        <div class="result__box" id="result-box"></div>
+        <button class="button button--outline" id="download-btn" type="button">
+          Скачать результат
+        </button>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>
