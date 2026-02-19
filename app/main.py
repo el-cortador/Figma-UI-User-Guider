@@ -20,6 +20,7 @@ from app.schemas import (
     FigmaFileResponse,
     FigmaFilteredResponse,
     GuideRequest,
+    GuideExportResponse,
     GuideResponse,
 )
 
@@ -100,6 +101,37 @@ def generate_guide(
         output = llm.generate(prompt)
         markdown, guide_json = parse_llm_output(output)
         return GuideResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
+    except FigmaBadUrlError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except FigmaAuthError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    except FigmaNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except FigmaRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except LLMRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.post("/guide/export", response_model=GuideExportResponse)
+def export_guide(
+    payload: GuideRequest,
+    client: FigmaClient = Depends(get_figma_client),
+    llm: LLMClient = Depends(get_llm_client),
+) -> GuideExportResponse:
+    try:
+        file_id = extract_file_id(payload.figma_url)
+        data = client.get_file(file_id, payload.figma_token)
+        filtered = filter_figma_json(data)
+        prompt = build_prompt(
+            filtered,
+            language=payload.language,
+            detail_level=payload.detail_level,
+            audience=payload.audience,
+        )
+        output = llm.generate(prompt)
+        markdown, guide_json = parse_llm_output(output)
+        return GuideExportResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
     except FigmaBadUrlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except FigmaAuthError as exc:

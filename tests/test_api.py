@@ -104,3 +104,23 @@ def test_generate_guide_success() -> None:
     assert data["file_id"] == "AbCdEf1234"
     assert "markdown" in data
     assert "guide_json" in data
+
+
+def test_export_guide_success() -> None:
+    client = TestClient(app)
+    response = client.post(
+        "/guide/export",
+        json={
+            "figma_url": "https://www.figma.com/file/AbCdEf1234/My-File",
+            "figma_token": "token",
+            "language": "ru",
+            "detail_level": "brief",
+            "audience": "user",
+        },
+    )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["file_id"] == "AbCdEf1234"
+    assert "markdown" in data
+    assert "guide_json" in data
