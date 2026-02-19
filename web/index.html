@@ -8,11 +8,11 @@
   </head>
   <body>
     <main class="page">
-      <h1 class="page__title">Figma UI User Guider</h1>
+      <h1 class="page__title">UI User Guider</h1>
 
       <section class="card">
         <label class="field">
-          <span class="field__label">Ссылка на макет в Figma</span>
+          <span class="field__label">Вставьте ссылку на макет из Figma</span>
           <input
             class="field__input"
             id="figma-url"
@@ -21,28 +21,34 @@
           />
         </label>
 
-        <div class="grid">
-          <label class="field">
-            <span class="field__label">Уровень детализации</span>
-            <div class="select">
-              <select class="field__input" id="detail-level" aria-label="Уровень детализации">
-                <option value="brief">Краткий</option>
-                <option value="detailed">Подробный</option>
-              </select>
-            </div>
-          </label>
+        <label class="field">
+          <span class="field__label">Или загрузите изображение в формате PNG/JPEG/SVG</span>
+          <div class="dropzone" id="dropzone">
+            <input class="dropzone__input" id="image-file" type="file" accept="image/png,image/jpeg,image/svg+xml" />
+            <span class="dropzone__text">Перетащите сюда изображение</span>
+          </div>
+        </label>
 
-          <label class="field">
-            <span class="field__label">Целевая аудитория</span>
-            <div class="select">
-              <select class="field__input" id="audience" aria-label="Целевая аудитория">
-                <option value="user">Пользователь</option>
-                <option value="developer">Разработчик</option>
-                <option value="engineer">Инженер</option>
-              </select>
-            </div>
-          </label>
-        </div>
+        <label class="field">
+          <span class="field__label">Уровень детализации</span>
+          <div class="select">
+            <select class="field__input" id="detail-level" aria-label="Уровень детализации">
+              <option value="brief">Краткий</option>
+              <option value="detailed">Подробный</option>
+            </select>
+          </div>
+        </label>
+
+        <label class="field">
+          <span class="field__label">Целевая аудитория</span>
+          <div class="select">
+            <select class="field__input" id="audience" aria-label="Целевая аудитория">
+              <option value="user">Пользователь</option>
+              <option value="developer">Разработчик</option>
+              <option value="engineer">Инженер</option>
+            </select>
+          </div>
+        </label>
 
         <button class="button" id="generate-btn" type="button">
           Сгенерировать руководство пользователя
