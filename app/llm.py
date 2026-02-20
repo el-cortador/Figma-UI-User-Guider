@@ -7,6 +7,7 @@ from app.config import (
     LLM_API_BASE,
     LLM_MAX_NEW_TOKENS,
     LLM_MODEL_NAME,
+    LLM_MODEL_SUFFIX,
     LLM_PROVIDER,
     LLM_TEMPERATURE,
     LLM_TIMEOUT,
@@ -66,6 +67,42 @@ class LLMClient:
             if isinstance(data, dict) and "generated_text" in data:
                 return data["generated_text"]
             raise LLMRequestError("Invalid HF response format")
+
+        if self._provider == "hf_router":
+            model_id = (
+                self._model
+                if ":" in self._model
+                else f"{self._model}:{LLM_MODEL_SUFFIX}"
+            )
+            payload = {
+                "model": model_id,
+                "messages": [
+                    {"role": "user", "content": prompt},
+                ],
+                "temperature": LLM_TEMPERATURE,
+                "stream": False,
+            }
+            headers = {"Content-Type": "application/json"}
+            if self._hf_token:
+                headers["Authorization"] = f"Bearer {self._hf_token}"
+
+            print(
+                f"[llm] provider=hf_router base_url={self._client.base_url} path=/v1/chat/completions"
+            )
+            response = self._client.post("/v1/chat/completions", json=payload, headers=headers)
+            if response.status_code >= 400:
+                body = response.text[:300]
+                print(
+                    "[llm] hf_router_error status=%s body=%s"
+                    % (response.status_code, body)
+                )
+                raise LLMRequestError(f"LLM API error: {response.status_code}")
+
+            data = response.json()
+            try:
+                return data["choices"][0]["message"]["content"]
+            except (KeyError, IndexError, TypeError) as exc:
+                raise LLMRequestError("Invalid HF Router response format") from exc
 
         payload = {
             "model": self._model,

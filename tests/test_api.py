@@ -34,7 +34,7 @@ def override_llm_client():
     client = LLMClient(
         transport=transport,
         provider="hf",
-        base_url="https://api-inference.huggingface.co/models/dim014/deepseek-r1-finetuned",
+        base_url="https://router.huggingface.co/hf-inference/models/HuggingFaceTB/SmolLM3-3B",
     )
     try:
         yield client
