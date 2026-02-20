@@ -3,8 +3,6 @@ const detailLevelSelect = document.getElementById("detail-level");
 const audienceSelect = document.getElementById("audience");
 const generateBtn = document.getElementById("generate-btn");
 const downloadBtn = document.getElementById("download-btn");
-const imageInput = document.getElementById("image-file");
-const dropzone = document.getElementById("dropzone");
 const resultBox = document.getElementById("result-box");
 
 let lastResult = null;
@@ -21,12 +19,9 @@ const renderMarkdown = (markdown) => {
 
 generateBtn.addEventListener("click", async () => {
   const figmaUrl = figmaUrlInput.value.trim();
-  const imageFile = imageInput?.files?.[0] || null;
   if (!figmaUrl) {
-    if (!imageFile) {
-      renderStatus("Укажите ссылку на макет Figma или загрузите изображение.", true);
-      return;
-    }
+    renderStatus("Укажите ссылку на макет Figma.", true);
+    return;
   }
 
   const payload = {
@@ -57,17 +52,6 @@ generateBtn.addEventListener("click", async () => {
   } catch (error) {
     renderStatus(error.message, true);
   }
-});
-
-dropzone?.addEventListener("dragover", (event) => {
-  event.preventDefault();
-});
-
-dropzone?.addEventListener("drop", (event) => {
-  event.preventDefault();
-  const files = event.dataTransfer?.files;
-  if (!files || !files.length) return;
-  imageInput.files = files;
 });
 
 downloadBtn.addEventListener("click", () => {
