@@ -7,6 +7,8 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
+from app.agent import AgentError, MaxIterationsError, build_user_request, run_agent
+from app.config import FIGMA_API_TOKEN
 from app.figma import (
     FigmaAuthError,
     FigmaBadUrlError,
@@ -17,19 +19,18 @@ from app.figma import (
     extract_file_id,
 )
 from app.filtering import filter_figma_json
-from app.generation import build_prompt, parse_llm_output
 from app.llm import LLMClient, LLMRequestError
-from app.config import FIGMA_API_TOKEN
 from app.schemas import (
     FigmaFileRequest,
     FigmaFileResponse,
     FigmaFilteredResponse,
-    GuideRequest,
     GuideExportResponse,
+    GuideRequest,
     GuideResponse,
 )
+from app.tools import ToolContext
 
-app = FastAPI(title="Figma UI User Guider", version="0.1.0")
+app = FastAPI(title="Figma UI User Guider Agent", version="0.2.0")
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web"
@@ -49,6 +50,11 @@ def index() -> FileResponse:
     return FileResponse(WEB_DIR / "index.html")
 
 
+# ---------------------------------------------------------------------------
+# Dependency providers
+# ---------------------------------------------------------------------------
+
+
 def get_figma_client() -> Generator[FigmaClient, None, None]:
     client = FigmaClient()
     try:
@@ -63,6 +69,11 @@ def get_llm_client() -> Generator[LLMClient, None, None]:
         yield client
     finally:
         client.close()
+
+
+# ---------------------------------------------------------------------------
+# Figma utility endpoints (unchanged — useful for debugging)
+# ---------------------------------------------------------------------------
 
 
 @app.post("/figma/file", response_model=FigmaFileResponse)
@@ -80,10 +91,10 @@ def fetch_figma_file(
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except FigmaNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except FigmaRequestError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
     except FigmaRateLimitError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except FigmaRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 
 @app.post("/figma/file/filtered", response_model=FigmaFilteredResponse)
@@ -102,79 +113,86 @@ def fetch_filtered_figma_file(
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     except FigmaNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except FigmaRequestError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
     except FigmaRateLimitError as exc:
         raise HTTPException(status_code=429, detail=str(exc)) from exc
+    except FigmaRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+# ---------------------------------------------------------------------------
+# Guide endpoints — backed by the agent loop
+# ---------------------------------------------------------------------------
 
 
 @app.post("/guide/generate", response_model=GuideResponse)
 def generate_guide(
     payload: GuideRequest,
-    client: FigmaClient = Depends(get_figma_client),
+    figma: FigmaClient = Depends(get_figma_client),
     llm: LLMClient = Depends(get_llm_client),
 ) -> GuideResponse:
-    try:
-        token = payload.figma_token or FIGMA_API_TOKEN
-        if not token:
-            raise HTTPException(status_code=400, detail="Figma token is required")
-        file_id = extract_file_id(payload.figma_url)
-        data = client.get_file(file_id, token)
-        filtered = filter_figma_json(data)
-        prompt = build_prompt(
-            filtered,
-            language=payload.language,
-            detail_level=payload.detail_level,
-            audience=payload.audience,
-        )
-        output = llm.generate(prompt)
-        markdown, guide_json = parse_llm_output(output)
-        return GuideResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
-    except FigmaBadUrlError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except FigmaAuthError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
-    except FigmaNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except FigmaRequestError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except FigmaRateLimitError as exc:
-        raise HTTPException(status_code=429, detail=str(exc)) from exc
-    except LLMRequestError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    return _run_guide_agent(payload, figma, llm)
 
 
 @app.post("/guide/export", response_model=GuideExportResponse)
 def export_guide(
     payload: GuideRequest,
-    client: FigmaClient = Depends(get_figma_client),
+    figma: FigmaClient = Depends(get_figma_client),
     llm: LLMClient = Depends(get_llm_client),
 ) -> GuideExportResponse:
+    guide = _run_guide_agent(payload, figma, llm)
+    return GuideExportResponse(
+        file_id=guide.file_id,
+        markdown=guide.markdown,
+        guide_json=guide.guide_json,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Shared agent runner
+# ---------------------------------------------------------------------------
+
+
+def _run_guide_agent(
+    payload: GuideRequest,
+    figma: FigmaClient,
+    llm: LLMClient,
+) -> GuideResponse:
+    """Validate inputs, run the agent loop, and return a GuideResponse.
+
+    Separating this from the endpoint handlers lets both /generate and /export
+    share one implementation without code duplication.
+    """
+    token = payload.figma_token or FIGMA_API_TOKEN
+    if not token:
+        raise HTTPException(status_code=400, detail="Figma token is required")
+
+    # Validate the URL before starting the agent so bad URLs get a 400,
+    # not a 502 wrapped inside a ToolError.
     try:
-        token = payload.figma_token or FIGMA_API_TOKEN
-        if not token:
-            raise HTTPException(status_code=400, detail="Figma token is required")
         file_id = extract_file_id(payload.figma_url)
-        data = client.get_file(file_id, token)
-        filtered = filter_figma_json(data)
-        prompt = build_prompt(
-            filtered,
-            language=payload.language,
-            detail_level=payload.detail_level,
-            audience=payload.audience,
-        )
-        output = llm.generate(prompt)
-        markdown, guide_json = parse_llm_output(output)
-        return GuideExportResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
     except FigmaBadUrlError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except FigmaAuthError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
-    except FigmaNotFoundError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
-    except FigmaRequestError as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    except FigmaRateLimitError as exc:
-        raise HTTPException(status_code=429, detail=str(exc)) from exc
+
+    ctx = ToolContext(figma_client=figma)
+    user_request = build_user_request(
+        figma_url=payload.figma_url,
+        figma_token=token,
+        language=payload.language,
+        detail_level=payload.detail_level,
+        audience=payload.audience,
+    )
+
+    try:
+        result = run_agent(user_request=user_request, ctx=ctx, llm=llm)
     except LLMRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+    except MaxIterationsError as exc:
+        raise HTTPException(status_code=504, detail=str(exc)) from exc
+    except AgentError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+    return GuideResponse(
+        file_id=file_id,
+        markdown=result.markdown,
+        guide_json=result.guide_json,
+    )
