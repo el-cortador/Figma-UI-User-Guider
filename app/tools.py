@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.figma import FigmaClient, FigmaError, extract_file_id
+from app.figma import FigmaClient, FigmaError, FigmaRateLimitError, extract_file_id
 from app.filtering import filter_figma_json
 
 
@@ -230,5 +230,7 @@ def dispatch_tool(
 
     try:
         return fn(**inputs, ctx=ctx)
+    except FigmaRateLimitError:
+        raise  # propagate so main.py can return HTTP 429 with Retry-After
     except FigmaError as exc:
         raise ToolError(str(exc)) from exc

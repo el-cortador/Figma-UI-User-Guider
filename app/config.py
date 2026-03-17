@@ -22,7 +22,7 @@ FIGMA_API_TOKEN = os.getenv("FIGMA_API_TOKEN", "")
 
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 LLM_API_BASE = os.getenv("LLM_API_BASE", "https://openrouter.ai/api/v1")
-LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "z-ai/glm-5")
+LLM_MODEL_NAME = os.getenv("LLM_MODEL_NAME", "z-ai/glm-4.7-flash")
 LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "4096"))
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", "0.2"))
 LLM_TIMEOUT = float(os.getenv("LLM_TIMEOUT", "120"))

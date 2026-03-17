@@ -140,11 +140,23 @@ class LLMClient:
                 f"API error {exc.status_code}: {exc.message}"
             ) from exc
 
+        if not response.choices:
+            raise LLMRequestError(
+                "Empty response from API: choices is None or empty. "
+                "The model may not support tool use or returned an unexpected format."
+            )
+
         choice = response.choices[0]
         finish_reason: str = choice.finish_reason or "stop"
         message = choice.message
 
-        logger.debug("[llm] response finish_reason=%s", finish_reason)
+        logger.debug(
+            "[llm] response finish_reason=%s text_length=%d tool_calls=%d",
+            finish_reason,
+            len(message.content or ""),
+            len(message.tool_calls or []),
+        )
+        logger.debug("[llm] raw content=%r", message.content)
 
         if finish_reason == "length":
             raise LLMRequestError(

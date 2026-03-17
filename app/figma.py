@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import logging
 import re
 
 import httpx
 
 from app.config import FIGMA_API_BASE, REQUEST_TIMEOUT
+
+logger = logging.getLogger(__name__)
 
 
 class FigmaError(Exception):
@@ -28,7 +31,15 @@ class FigmaBadUrlError(FigmaError):
 
 
 class FigmaRateLimitError(FigmaError):
-    """Raised when Figma API rate limit is exceeded."""
+    """Raised when Figma API rate limit is exceeded.
+
+    Attributes:
+        retry_after: seconds until the client may retry, or ``None`` if unknown.
+    """
+
+    def __init__(self, message: str, retry_after: int | None = None) -> None:
+        super().__init__(message)
+        self.retry_after = retry_after
 
 
 def extract_file_id(value: str) -> str:
@@ -70,9 +81,11 @@ class FigmaClient:
             for key, value in response.headers.items()
             if "ratelimit" in key.lower() or key.lower() == "retry-after"
         }
-        print(
-            "[figma] request_path=%s status=%s rate=%s"
-            % (response.request.url.path, response.status_code, rate_headers)
+        logger.debug(
+            "[figma] request_path=%s status=%s rate=%s",
+            response.request.url.path,
+            response.status_code,
+            rate_headers,
         )
 
         if response.status_code in (401, 403):
@@ -80,7 +93,14 @@ class FigmaClient:
         if response.status_code == 404:
             raise FigmaNotFoundError("File not found")
         if response.status_code == 429:
-            raise FigmaRateLimitError(f"Rate limit exceeded: {rate_headers}")
+            raw = response.headers.get("retry-after", "")
+            retry_after = int(raw) if raw.isdigit() else None
+            if retry_after is not None:
+                msg = f"Figma API rate limit exceeded. Try again in {retry_after} seconds."
+            else:
+                msg = "Figma API rate limit exceeded."
+            logger.warning("[figma] rate limit exceeded retry_after=%s", retry_after)
+            raise FigmaRateLimitError(msg, retry_after=retry_after)
         if response.status_code >= 400:
             raise FigmaRequestError(f"Figma API error: {response.status_code}")
 

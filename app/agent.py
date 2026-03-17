@@ -6,36 +6,10 @@ from dataclasses import dataclass
 from typing import Any, Protocol
 
 from app.generation import parse_llm_output
+from app.prompts import BRIEF_SYSTEM_PROMPT
 from app.tools import TOOL_DEFINITIONS, ToolContext, ToolError, dispatch_tool
 
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# System prompt
-# ---------------------------------------------------------------------------
-
-SYSTEM_PROMPT = """
-Ты — технический писатель, специализирующийся на создании пользовательских руководств по интерфейсам Figma.
-
-У тебя есть три инструмента для работы с файлом:
-• fetch_figma_file  — загрузить файл по URL. Вызывай первым.
-• filter_ui_elements — извлечь UI-элементы (кнопки, поля, заголовки, текст) сгруппированные по экранам.
-• get_screen_elements — получить полный список элементов конкретного экрана (используй для детального анализа отдельных экранов).
-
-Алгоритм работы:
-1. Вызови fetch_figma_file — получи список экранов и file_id.
-2. Вызови filter_ui_elements — понять общую структуру интерфейса.
-3. При необходимости вызывай get_screen_elements для нужных экранов, чтобы получить детали.
-4. На основе собранных данных сформируй финальный ответ.
-
-Формат финального ответа (строго соблюдай):
-
-MARKDOWN:
-<пошаговое руководство в формате Markdown>
-
-JSON:
-{"title": "...", "steps": [{"index": 1, "title": "...", "description": "..."}, ...]}
-"""
 
 # ---------------------------------------------------------------------------
 # Exceptions
@@ -103,12 +77,13 @@ def build_user_request(
 ) -> str:
     """Construct the initial user message for the agent."""
     return (
-        "Создай руководство по пользовательскому интерфейсу Figma-файла.\n\n"
+        "Создай руководство пользователя на макет интерфейса из Figma-файла.\n\n"
         f"URL файла: {figma_url}\n"
         f"Токен Figma: {figma_token}\n"
         f"Язык руководства: {language}\n"
         f"Уровень детализации: {detail_level}\n"
-        f"Целевая аудитория: {audience}"
+        f"Целевая аудитория: {audience}\n"
+        f"Структура руководства пользователя:\n\n- Назначение интерфейса;\n - Порядок шагов, выполняемых пользователем;\n - Какой возможный результат после выполнения этих шагов."
     )
 
 
@@ -116,6 +91,7 @@ def run_agent(
     user_request: str,
     ctx: ToolContext,
     llm: ChatClient,
+    system_prompt: str = BRIEF_SYSTEM_PROMPT,
     max_iterations: int = 10,
 ) -> AgentResult:
     """Run the agent loop until a final answer is produced.
@@ -133,9 +109,12 @@ def run_agent(
       — one message per call (``extend``, not ``append``).
 
     Args:
-        user_request: The initial user message (use ``build_user_request``).
-        ctx:          Request-scoped tool context holding caches and clients.
-        llm:          Any object implementing ``ChatClient``.
+        user_request:   The initial user message (use ``build_user_request``).
+        ctx:            Request-scoped tool context holding caches and clients.
+        llm:            Any object implementing ``ChatClient``.
+        system_prompt:  System prompt controlling the guide style. Use
+                        ``app.prompts.get_system_prompt(detail_level)`` to
+                        select between brief and detailed variants.
         max_iterations: Safety cap on the number of LLM round-trips.
 
     Raises:
@@ -147,7 +126,7 @@ def run_agent(
     for iteration in range(max_iterations):
         logger.debug("[agent] iteration=%d messages=%d", iteration + 1, len(messages))
 
-        response = llm.chat(messages=messages, tools=TOOL_DEFINITIONS, system=SYSTEM_PROMPT)
+        response = llm.chat(messages=messages, tools=TOOL_DEFINITIONS, system=system_prompt)
 
         # Always record the assistant turn before branching.
         messages.append(response["assistant_message"])
@@ -162,7 +141,20 @@ def run_agent(
             continue
 
         if stop_reason == "stop":
-            markdown, guide_json = parse_llm_output(response["text"])
+            text: str = response["text"]
+            logger.info(
+                "[agent] final text iteration=%d length=%d preview=%r",
+                iteration + 1,
+                len(text),
+                text[:200],
+            )
+            if not text.strip():
+                raise AgentError(
+                    "Модель вернула пустой ответ на финальном шаге. "
+                    "Возможно, модель не поддерживает вызов инструментов или не смогла "
+                    "сгенерировать руководство. Попробуйте сменить модель в настройках."
+                )
+            markdown, guide_json = parse_llm_output(text)
             logger.info("[agent] finished in %d iteration(s)", iteration + 1)
             return AgentResult(markdown=markdown, guide_json=guide_json)
 

@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from app.agent import AgentError, MaxIterationsError, build_user_request, run_agent
 from app.config import FIGMA_API_TOKEN
+from app.prompts import get_system_prompt
 from app.figma import (
     FigmaAuthError,
     FigmaBadUrlError,
@@ -183,7 +184,15 @@ def _run_guide_agent(
     )
 
     try:
-        result = run_agent(user_request=user_request, ctx=ctx, llm=llm)
+        result = run_agent(
+                user_request=user_request,
+                ctx=ctx,
+                llm=llm,
+                system_prompt=get_system_prompt(payload.detail_level),
+            )
+    except FigmaRateLimitError as exc:
+        headers = {"Retry-After": str(exc.retry_after)} if exc.retry_after is not None else {}
+        raise HTTPException(status_code=429, detail=str(exc), headers=headers) from exc
     except LLMRequestError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
     except MaxIterationsError as exc:
