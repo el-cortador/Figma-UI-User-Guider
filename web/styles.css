@@ -1,3 +1,18 @@
+/* === Design tokens === */
+:root {
+  --c-primary:      #53BDE0;
+  --c-primary-dark: #2F9EC4;
+  --c-primary-dim:  #E6F6FB;
+  --c-text:         #1A2E38;
+  --c-text-muted:   #5A7A88;
+  --c-border:       #C4DFE9;
+  --c-bg:           #F2F9FC;
+  --c-surface:      #FFFFFF;
+  --c-error:        #D9342B;
+  --c-error-bg:     #FFF0EF;
+  --radius:         8px;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -5,48 +20,88 @@
 body {
   margin: 0;
   font-family: "Segoe UI", Arial, sans-serif;
-  color: #0b0b0b;
-  background: #ffffff;
+  color: var(--c-text);
+  background: var(--c-bg);
 }
+
+/* === Layout === */
 
 .page {
   max-width: 720px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 40px 24px 72px;
 }
 
 .page__title {
-  font-size: 36px;
+  font-size: 34px;
   font-weight: 700;
   text-align: center;
-  margin: 8px 0 28px;
+  margin: 0 0 8px;
+  letter-spacing: -0.3px;
+  color: var(--c-text);
 }
+
+.page__title span {
+  color: var(--c-primary);
+}
+
+/* Subtle divider under the title */
+.page__title::after {
+  content: "";
+  display: block;
+  width: 48px;
+  height: 3px;
+  background: var(--c-primary);
+  border-radius: 2px;
+  margin: 10px auto 32px;
+}
+
+/* === Form card === */
 
 .card {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 28px 24px;
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 6px;
 }
 
 .field__label {
-  font-size: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--c-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .field__input {
   width: 100%;
   height: 44px;
   padding: 0 16px;
-  border-radius: 8px;
-  border: 1px solid #111111;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--c-border);
   font-size: 14px;
-  background: #ffffff;
+  background: var(--c-bg);
+  color: var(--c-text);
+  transition: border-color 0.15s, box-shadow 0.15s;
+  outline: none;
 }
+
+.field__input:focus {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px rgba(83, 189, 224, 0.18);
+  background: var(--c-surface);
+}
+
+/* === Custom select === */
 
 .select {
   position: relative;
@@ -55,59 +110,101 @@ body {
 .select::after {
   content: "";
   position: absolute;
-  right: 16px;
+  right: 14px;
   top: 50%;
   width: 0;
   height: 0;
   border-left: 5px solid transparent;
   border-right: 5px solid transparent;
-  border-top: 8px solid #111111;
+  border-top: 6px solid var(--c-primary);
   transform: translateY(-30%);
   pointer-events: none;
 }
 
 .select select {
   appearance: none;
+  cursor: pointer;
 }
+
+/* === Buttons === */
 
 .button {
   align-self: center;
   padding: 12px 28px;
-  border-radius: 8px;
-  border: 1px solid #111111;
-  background: #ffffff;
+  border-radius: var(--radius);
+  border: none;
+  background: var(--c-primary);
+  color: #ffffff;
   font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   min-width: 300px;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+  letter-spacing: 0.2px;
+}
+
+.button:hover {
+  background: var(--c-primary-dark);
+  box-shadow: 0 4px 12px rgba(83, 189, 224, 0.35);
+}
+
+.button:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.button:disabled {
+  background: var(--c-border);
+  color: var(--c-text-muted);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 
 .button--outline {
-  margin-top: 24px;
+  margin-top: 8px;
+  background: transparent;
+  border: 1.5px solid var(--c-primary);
+  color: var(--c-primary);
 }
+
+.button--outline:hover {
+  background: var(--c-primary-dim);
+  box-shadow: none;
+}
+
+/* === Result section === */
 
 .result {
   margin-top: 28px;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .result__title {
-  font-size: 14px;
-  font-weight: 400;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--c-text-muted);
   margin: 0;
 }
 
 .result__box {
   min-height: 180px;
-  border: 1px solid #111111;
-  border-radius: 8px;
-  padding: 12px;
+  border: 1.5px solid var(--c-border);
+  border-radius: 12px;
+  padding: 16px;
   font-size: 13px;
+  line-height: 1.65;
   white-space: pre-wrap;
+  background: var(--c-surface);
+  color: var(--c-text);
 }
 
 .result__box--error {
-  border-color: #d9342b;
-  color: #d9342b;
+  border-color: var(--c-error);
+  background: var(--c-error-bg);
+  color: var(--c-error);
 }
