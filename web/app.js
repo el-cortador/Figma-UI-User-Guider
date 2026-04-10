@@ -4,15 +4,22 @@ const audienceSelect = document.getElementById("audience");
 const generateBtn = document.getElementById("generate-btn");
 const downloadBtn = document.getElementById("download-btn");
 const resultBox = document.getElementById("result-box");
+const resultSection = document.getElementById("result-section");
 
 let lastResult = null;
 
+const showResult = () => {
+  resultSection.hidden = false;
+};
+
 const renderStatus = (message, isError = false) => {
+  showResult();
   resultBox.textContent = message;
   resultBox.classList.toggle("result__box--error", isError);
 };
 
 const renderMarkdown = (markdown) => {
+  showResult();
   resultBox.classList.remove("result__box--error");
   resultBox.textContent = markdown;
 };
@@ -32,6 +39,7 @@ generateBtn.addEventListener("click", async () => {
     audience: audienceSelect.value,
   };
 
+  generateBtn.disabled = true;
   renderStatus("Генерация...", false);
 
   try {
@@ -51,6 +59,8 @@ generateBtn.addEventListener("click", async () => {
     renderMarkdown(data.markdown || "Результат пустой.");
   } catch (error) {
     renderStatus(error.message, true);
+  } finally {
+    generateBtn.disabled = false;
   }
 });
 

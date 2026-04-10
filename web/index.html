@@ -8,11 +8,12 @@
   </head>
   <body>
     <main class="page">
-      <h1 class="page__title"><span>Figma UI User Guider</span></h1>
+      <h1 class="page__title">Figma UI User Guider</h1>
+      <p class="page__subtitle">Вставьте ссылку на макет — агент сгенерирует руководство пользователя</p>
 
       <section class="card">
         <label class="field">
-          <span class="field__label">Вставьте ссылку на макет из Figma</span>
+          <span class="field__label">Ссылка на макет</span>
           <input
             class="field__input"
             id="figma-url"
@@ -21,33 +22,35 @@
           />
         </label>
 
-        <label class="field">
-          <span class="field__label">Уровень детализации</span>
-          <div class="select">
-            <select class="field__input" id="detail-level" aria-label="Уровень детализации">
-              <option value="brief">Краткий</option>
-              <option value="detailed">Подробный</option>
-            </select>
-          </div>
-        </label>
+        <div class="field-row">
+          <label class="field">
+            <span class="field__label">Детализация</span>
+            <div class="select">
+              <select class="field__input" id="detail-level" aria-label="Уровень детализации">
+                <option value="brief">Краткий</option>
+                <option value="detailed">Подробный</option>
+              </select>
+            </div>
+          </label>
 
-        <label class="field">
-          <span class="field__label">Целевая аудитория</span>
-          <div class="select">
-            <select class="field__input" id="audience" aria-label="Целевая аудитория">
-              <option value="user">Пользователь</option>
-              <option value="developer">Разработчик</option>
-              <option value="engineer">Инженер</option>
-            </select>
-          </div>
-        </label>
+          <label class="field">
+            <span class="field__label">Аудитория</span>
+            <div class="select">
+              <select class="field__input" id="audience" aria-label="Целевая аудитория">
+                <option value="user">Пользователь</option>
+                <option value="developer">Разработчик</option>
+                <option value="engineer">Инженер</option>
+              </select>
+            </div>
+          </label>
+        </div>
 
-        <button class="button" id="generate-btn" type="button">
-          Сгенерировать руководство пользователя
+        <button class="button button--generate" id="generate-btn" type="button">
+          Сгенерировать руководство ↗
         </button>
       </section>
 
-      <section class="result">
+      <section class="result" id="result-section" hidden>
         <h2 class="result__title">Результат генерации</h2>
         <div class="result__box" id="result-box"></div>
         <button class="button button--outline" id="download-btn" type="button">
