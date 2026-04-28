@@ -9,41 +9,48 @@
   <body>
     <main class="page">
       <h1 class="page__title">Figma UI User Guider</h1>
-      <p class="page__subtitle">Вставьте ссылку на макет — агент сгенерирует руководство пользователя</p>
+      <p class="page__subtitle">Вставьте ссылку или загрузите файл — агент сгенерирует руководство пользователя</p>
 
       <section class="card">
-        <label class="field">
-          <span class="field__label">Ссылка на макет</span>
-          <input
-            class="field__input"
-            id="figma-url"
-            type="url"
-            placeholder="https://www.figma.com/file/..."
-          />
-        </label>
+        <div class="tabs" role="tablist">
+          <button class="tab tab--active" id="tab-url" type="button" role="tab" aria-selected="true">По ссылке</button>
+          <button class="tab" id="tab-file" type="button" role="tab" aria-selected="false">Загрузить файл</button>
+        </div>
 
-        <div class="field-row">
+        <div id="section-url">
           <label class="field">
-            <span class="field__label">Детализация</span>
-            <div class="select">
-              <select class="field__input" id="detail-level" aria-label="Уровень детализации">
-                <option value="brief">Краткий</option>
-                <option value="detailed">Подробный</option>
-              </select>
-            </div>
-          </label>
-
-          <label class="field">
-            <span class="field__label">Аудитория</span>
-            <div class="select">
-              <select class="field__input" id="audience" aria-label="Целевая аудитория">
-                <option value="user">Пользователь</option>
-                <option value="developer">Разработчик</option>
-                <option value="engineer">Инженер</option>
-              </select>
-            </div>
+            <span class="field__label">Ссылка на макет</span>
+            <input
+              class="field__input"
+              id="figma-url"
+              type="url"
+              placeholder="https://www.figma.com/file/..."
+            />
           </label>
         </div>
+
+        <div id="section-file" hidden>
+          <label class="field">
+            <span class="field__label">Файл макета</span>
+            <input
+              class="field__input field__input--file"
+              id="file-input"
+              type="file"
+              accept=".png,.jpg,.jpeg,.svg,.fig"
+            />
+            <span class="field__hint">PNG, JPG, SVG или .fig — до 20 МБ</span>
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">Детализация</span>
+          <div class="select">
+            <select class="field__input" id="detail-level" aria-label="Уровень детализации">
+              <option value="brief">Краткий</option>
+              <option value="detailed">Подробный</option>
+            </select>
+          </div>
+        </label>
 
         <button class="button button--generate" id="generate-btn" type="button">
           Сгенерировать руководство ↗
