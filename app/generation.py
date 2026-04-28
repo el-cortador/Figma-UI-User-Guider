@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import json
-
 
 def _limit_elements(filtered_json: dict, limit: int = 20) -> dict:
     if not filtered_json or "screens" not in filtered_json:
@@ -32,40 +30,33 @@ def build_prompt(
     language: str,
     detail_level: str,
 ) -> str:
+    import json
+
     limited_json = _limit_elements(filtered_json, limit=20)
     return (
-        "Ты — технический писатель. Сгенерируй пошаговое руководство по интерфейсу. "
-        "Ответ должен содержать два раздела: MARKDOWN и JSON. "
-        "В JSON укажи: title, steps (массив объектов с полями index, title, description).\n\n"
+        "Ты — технический писатель. Сгенерируй пошаговое руководство по интерфейсу в формате Markdown.\n\n"
         f"Язык: {language}\n"
         f"Детализация: {detail_level}\n\n"
         "Данные об интерфейсе (JSON):\n"
         f"{json.dumps(limited_json, ensure_ascii=False)}\n\n"
         "Формат ответа:\n"
-        "MARKDOWN:\n<текст>\n\nJSON:\n<json>"
+        "MARKDOWN:\n<текст>"
     )
 
 
-def parse_llm_output(text: str) -> tuple[str, dict]:
+def parse_llm_output(text: str) -> str:
+    """Extract the Markdown section from the LLM response."""
     cleaned = text
     while "<think>" in cleaned and "</think>" in cleaned:
         start = cleaned.find("<think>")
         end = cleaned.find("</think>", start)
         if end == -1:
             break
-        cleaned = cleaned[:start] + cleaned[end + len("</think>") :]
+        cleaned = cleaned[:start] + cleaned[end + len("</think>"):]
 
     cleaned = cleaned.replace("<think>", "").replace("</think>", "")
 
-    if "JSON:" not in cleaned:
-        return cleaned.strip(), {"markdown": cleaned.strip()}
+    if "MARKDOWN:" in cleaned:
+        cleaned = cleaned.split("MARKDOWN:", 1)[1]
 
-    markdown_part, json_part = cleaned.split("JSON:", 1)
-    markdown = markdown_part.replace("MARKDOWN:", "").strip()
-    json_str = json_part.strip()
-
-    try:
-        data = json.loads(json_str)
-        return markdown, data
-    except json.JSONDecodeError:
-        return markdown, {"markdown": markdown}
+    return cleaned.strip()

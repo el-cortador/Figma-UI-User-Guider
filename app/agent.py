@@ -32,7 +32,6 @@ class MaxIterationsError(AgentError):
 @dataclass
 class AgentResult:
     markdown: str
-    guide_json: dict
 
 
 # ---------------------------------------------------------------------------
@@ -107,8 +106,8 @@ def run_vision_agent(
             "Убедитесь, что выбранная модель поддерживает анализ изображений (vision)."
         )
 
-    markdown, guide_json = parse_llm_output(text)
-    return AgentResult(markdown=markdown, guide_json=guide_json)
+    markdown = parse_llm_output(text)
+    return AgentResult(markdown=markdown)
 
 
 def build_user_request(
@@ -195,9 +194,9 @@ def run_agent(
                     "Возможно, модель не поддерживает вызов инструментов или не смогла "
                     "сгенерировать руководство. Попробуйте сменить модель в настройках."
                 )
-            markdown, guide_json = parse_llm_output(text)
+            markdown = parse_llm_output(text)
             logger.info("[agent] finished in %d iteration(s)", iteration + 1)
-            return AgentResult(markdown=markdown, guide_json=guide_json)
+            return AgentResult(markdown=markdown)
 
         raise AgentError(f"Unexpected stop_reason from LLM: '{stop_reason}'")
 

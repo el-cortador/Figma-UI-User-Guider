@@ -28,7 +28,6 @@ from app.schemas import (
     FigmaFileRequest,
     FigmaFileResponse,
     FigmaFilteredResponse,
-    GuideExportResponse,
     GuideRequest,
     GuideResponse,
 )
@@ -137,20 +136,6 @@ def generate_guide(
     return _run_guide_agent(payload, figma, llm)
 
 
-@app.post("/guide/export", response_model=GuideExportResponse)
-def export_guide(
-    payload: GuideRequest,
-    figma: FigmaClient = Depends(get_figma_client),
-    llm: LLMClient = Depends(get_llm_client),
-) -> GuideExportResponse:
-    guide = _run_guide_agent(payload, figma, llm)
-    return GuideExportResponse(
-        file_id=guide.file_id,
-        markdown=guide.markdown,
-        guide_json=guide.guide_json,
-    )
-
-
 # ---------------------------------------------------------------------------
 # File upload endpoint
 # ---------------------------------------------------------------------------
@@ -213,7 +198,7 @@ def _run_vision_guide(
         raise HTTPException(status_code=502, detail=str(exc))
     except AgentError as exc:
         raise HTTPException(status_code=502, detail=str(exc))
-    return GuideResponse(file_id=filename, markdown=result.markdown, guide_json=result.guide_json)
+    return GuideResponse(file_id=filename, markdown=result.markdown)
 
 
 def _run_fig_json_guide(
@@ -236,8 +221,8 @@ def _run_fig_json_guide(
     text = response["text"]
     if not text.strip():
         raise HTTPException(status_code=502, detail="Модель вернула пустой ответ.")
-    markdown, guide_json = parse_llm_output(text)
-    return GuideResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
+    markdown = parse_llm_output(text)
+    return GuideResponse(file_id=file_id, markdown=markdown)
 
 
 # ---------------------------------------------------------------------------
@@ -294,5 +279,4 @@ def _run_guide_agent(
     return GuideResponse(
         file_id=file_id,
         markdown=result.markdown,
-        guide_json=result.guide_json,
     )

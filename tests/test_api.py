@@ -30,7 +30,6 @@ _FIGMA_RESPONSE = {"name": "Demo", "document": {"id": "0:0", "children": []}}
 
 _AGENT_RESULT = AgentResult(
     markdown="# Руководство\n\nШаг 1: Откройте приложение.",
-    guide_json={"title": "Demo", "steps": [{"index": 1, "title": "Шаг 1", "description": "Откройте приложение."}]},
 )
 
 _GUIDE_PAYLOAD = {
@@ -172,7 +171,6 @@ def test_generate_guide_success() -> None:
     data = response.json()
     assert data["file_id"] == "AbCdEf1234"
     assert data["markdown"] == _AGENT_RESULT.markdown
-    assert data["guide_json"] == _AGENT_RESULT.guide_json
 
 
 def test_generate_guide_bad_url() -> None:
@@ -219,18 +217,3 @@ def test_generate_guide_agent_error() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_export_guide_success() -> None:
-    with patch("app.main.run_agent", return_value=_AGENT_RESULT):
-        response = TestClient(app).post("/guide/export", json=_GUIDE_PAYLOAD)
-
-    assert response.status_code == 200
-    data = response.json()
-    assert data["file_id"] == "AbCdEf1234"
-    assert "markdown" in data
-    assert "guide_json" in data
-
-
-def test_export_guide_max_iterations() -> None:
-    with patch("app.main.run_agent", side_effect=MaxIterationsError("too many")):
-        response = TestClient(app).post("/guide/export", json=_GUIDE_PAYLOAD)
-    assert response.status_code == 504

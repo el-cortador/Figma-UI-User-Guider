@@ -144,16 +144,7 @@ downloadBtn.addEventListener("click", () => {
     return;
   }
 
-  const blob = new Blob(
-    [
-      "# Руководство\n\n",
-      lastResult.markdown || "",
-      "\n\n```json\n",
-      JSON.stringify(lastResult.guide_json || {}, null, 2),
-      "\n```\n",
-    ],
-    { type: "text/markdown" }
-  );
+  const blob = new Blob([lastResult.markdown || ""], { type: "text/markdown" });
 
   const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);

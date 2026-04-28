@@ -28,10 +28,3 @@ class GuideRequest(BaseModel):
 class GuideResponse(BaseModel):
     file_id: str
     markdown: str
-    guide_json: dict
-
-
-class GuideExportResponse(BaseModel):
-    file_id: str
-    markdown: str
-    guide_json: dict
