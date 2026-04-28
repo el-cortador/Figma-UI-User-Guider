@@ -57,11 +57,28 @@ def _collect_elements(node: dict[str, Any]) -> list[dict[str, Any]]:
     return elements
 
 
+def _find_screens(node: dict[str, Any]) -> list[dict[str, Any]]:
+    """Recursively collect FRAME nodes, traversing CANVAS and SECTION containers.
+
+    Figma document hierarchy: DOCUMENT → CANVAS (page) → FRAME
+    Nodes API response:       DOCUMENT → SECTION → FRAME
+                              DOCUMENT → FRAME  (when a single frame was linked)
+    """
+    result: list[dict[str, Any]] = []
+    for child in _iter_children(node):
+        t = child.get("type", "")
+        if t == "FRAME":
+            result.append(child)
+        elif t in ("CANVAS", "SECTION"):
+            result.extend(_find_screens(child))
+    return result
+
+
 def filter_figma_json(figma_json: dict[str, Any]) -> dict[str, Any]:
     document = figma_json.get("document") or {}
     file_name = figma_json.get("name")
 
-    frames = [child for child in _iter_children(document) if child.get("type") == "FRAME"]
+    frames = _find_screens(document)
     screens: list[dict[str, Any]] = []
 
     if frames:

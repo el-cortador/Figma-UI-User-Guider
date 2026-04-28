@@ -23,7 +23,6 @@ class GuideRequest(BaseModel):
     figma_token: str = ""
     language: str = "ru"
     detail_level: str = "brief"
-    audience: str = "user"
 
 
 class GuideResponse(BaseModel):

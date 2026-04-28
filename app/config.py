@@ -13,7 +13,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 # ---------------------------------------------------------------------------
 
 FIGMA_API_BASE = os.getenv("FIGMA_API_BASE", "https://api.figma.com/v1")
-REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "15"))
+REQUEST_TIMEOUT = float(os.getenv("REQUEST_TIMEOUT", "60"))
 FIGMA_API_TOKEN = os.getenv("FIGMA_API_TOKEN", "")
 
 # ---------------------------------------------------------------------------

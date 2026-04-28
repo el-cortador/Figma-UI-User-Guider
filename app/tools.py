@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
 
-from app.figma import FigmaClient, FigmaError, FigmaRateLimitError, extract_file_id
-from app.filtering import filter_figma_json
+logger = logging.getLogger(__name__)
+
+from app.figma import (
+    FigmaClient,
+    FigmaError,
+    FigmaRateLimitError,
+    extract_file_id,
+    extract_node_id,
+    normalize_nodes_to_file,
+)
+from app.filtering import _find_screens, filter_figma_json
 
 
 class ToolError(Exception):
@@ -29,19 +39,29 @@ class ToolContext:
 
 
 def fetch_figma_file(figma_url: str, figma_token: str, ctx: ToolContext) -> dict[str, Any]:
-    """Fetch raw Figma file via the Figma API and cache it by file_id.
+    """Fetch a Figma file (or a specific node) and cache it by file_id.
 
-    Returns a lightweight summary so the LLM doesn't see the full JSON.
-    Subsequent tools reference the file by ``file_id``.
+    When the URL contains a ``node-id`` (e.g. from "Copy link to selection"),
+    only that node is fetched via the nodes API — this avoids 400 errors on
+    very large files and speeds up the request significantly.
+
+    Returns a lightweight summary; subsequent tools reference by ``file_id``.
     """
     file_id = extract_file_id(figma_url)
+    node_id = extract_node_id(figma_url)
 
     if file_id not in ctx._figma_cache:
-        ctx._figma_cache[file_id] = ctx.figma_client.get_file(file_id, figma_token)
+        if node_id:
+            logger.info("[tools] fetching nodes api file_id=%s node_id=%s", file_id, node_id)
+            nodes_data = ctx.figma_client.get_file_nodes(file_id, node_id, figma_token)
+            figma_json = normalize_nodes_to_file(nodes_data)
+        else:
+            logger.info("[tools] fetching full file file_id=%s", file_id)
+            figma_json = ctx.figma_client.get_file(file_id, figma_token)
+        ctx._figma_cache[file_id] = figma_json
 
     figma_json = ctx._figma_cache[file_id]
-    document = figma_json.get("document") or {}
-    frames = [c for c in document.get("children", []) if c.get("type") == "FRAME"]
+    frames = _find_screens(figma_json.get("document") or {})
 
     return {
         "file_id": file_id,

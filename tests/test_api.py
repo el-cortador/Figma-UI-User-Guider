@@ -38,7 +38,6 @@ _GUIDE_PAYLOAD = {
     "figma_token": "token",
     "language": "ru",
     "detail_level": "brief",
-    "audience": "user",
 }
 
 

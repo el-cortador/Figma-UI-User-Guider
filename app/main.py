@@ -3,13 +3,16 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Generator
 
-from fastapi import Depends, FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.concurrency import run_in_threadpool
 
-from app.agent import AgentError, MaxIterationsError, build_user_request, run_agent
+from app.agent import AgentError, MaxIterationsError, build_user_request, run_agent, run_vision_agent
 from app.config import FIGMA_API_TOKEN
-from app.prompts import get_system_prompt
+from app.file_handler import process_uploaded_file
+from app.generation import build_prompt, parse_llm_output
+from app.prompts import get_data_system_prompt, get_system_prompt, get_vision_system_prompt
 from app.figma import (
     FigmaAuthError,
     FigmaBadUrlError,
@@ -149,6 +152,95 @@ def export_guide(
 
 
 # ---------------------------------------------------------------------------
+# File upload endpoint
+# ---------------------------------------------------------------------------
+
+
+@app.post("/guide/upload", response_model=GuideResponse)
+async def upload_guide(
+    file: UploadFile = File(...),
+    language: str = Form("ru"),
+    detail_level: str = Form("brief"),
+    llm: LLMClient = Depends(get_llm_client),
+) -> GuideResponse:
+    content = await file.read()
+    filename = file.filename or "upload"
+
+    try:
+        processed = process_uploaded_file(content, filename)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if processed["mode"] == "image":
+        return await run_in_threadpool(
+            _run_vision_guide,
+            processed["base64"],
+            processed["mime_type"],
+            filename,
+            language,
+            detail_level,
+            llm,
+        )
+
+    return await run_in_threadpool(
+        _run_fig_json_guide,
+        processed["data"],
+        processed["file_id"],
+        language,
+        detail_level,
+        llm,
+    )
+
+
+def _run_vision_guide(
+    image_base64: str,
+    mime_type: str,
+    filename: str,
+    language: str,
+    detail_level: str,
+    llm: LLMClient,
+) -> GuideResponse:
+    try:
+        result = run_vision_agent(
+            image_base64=image_base64,
+            mime_type=mime_type,
+            language=language,
+            detail_level=detail_level,
+            llm=llm,
+            system_prompt=get_vision_system_prompt(detail_level),
+        )
+    except LLMRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    except AgentError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    return GuideResponse(file_id=filename, markdown=result.markdown, guide_json=result.guide_json)
+
+
+def _run_fig_json_guide(
+    figma_data: dict,
+    file_id: str,
+    language: str,
+    detail_level: str,
+    llm: LLMClient,
+) -> GuideResponse:
+    filtered = filter_figma_json(figma_data)
+    prompt_text = build_prompt(filtered, language, detail_level)
+    try:
+        response = llm.chat(
+            messages=[{"role": "user", "content": prompt_text}],
+            tools=[],
+            system=get_data_system_prompt(detail_level),
+        )
+    except LLMRequestError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
+    text = response["text"]
+    if not text.strip():
+        raise HTTPException(status_code=502, detail="Модель вернула пустой ответ.")
+    markdown, guide_json = parse_llm_output(text)
+    return GuideResponse(file_id=file_id, markdown=markdown, guide_json=guide_json)
+
+
+# ---------------------------------------------------------------------------
 # Shared agent runner
 # ---------------------------------------------------------------------------
 
@@ -180,7 +272,6 @@ def _run_guide_agent(
         figma_token=token,
         language=payload.language,
         detail_level=payload.detail_level,
-        audience=payload.audience,
     )
 
     try:

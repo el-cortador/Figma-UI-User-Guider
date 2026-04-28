@@ -92,3 +92,48 @@ def get_system_prompt(detail_level: str) -> str:
     never starts without a system prompt.
     """
     return _PROMPTS.get(detail_level, BRIEF_SYSTEM_PROMPT)
+
+
+# ---------------------------------------------------------------------------
+# Vision prompts — for image uploads (no tool calls)
+# ---------------------------------------------------------------------------
+
+_VISION_ROLE = """\
+Ты — технический писатель. Тебе предоставлено изображение макета интерфейса. \
+Проанализируй его визуально: определи экраны, основные UI-элементы \
+(кнопки, поля ввода, навигацию, заголовки) и логику действий пользователя.\
+"""
+
+VISION_BRIEF_SYSTEM_PROMPT: str = "\n\n".join([_VISION_ROLE, _STYLE_BRIEF, _FORMAT])
+VISION_DETAILED_SYSTEM_PROMPT: str = "\n\n".join([_VISION_ROLE, _STYLE_DETAILED, _FORMAT])
+
+_VISION_PROMPTS: dict[str, str] = {
+    "brief": VISION_BRIEF_SYSTEM_PROMPT,
+    "detailed": VISION_DETAILED_SYSTEM_PROMPT,
+}
+
+
+def get_vision_system_prompt(detail_level: str) -> str:
+    return _VISION_PROMPTS.get(detail_level, VISION_BRIEF_SYSTEM_PROMPT)
+
+
+# ---------------------------------------------------------------------------
+# Data prompts — for .fig JSON uploads (no tool calls, JSON in prompt)
+# ---------------------------------------------------------------------------
+
+_DATA_ROLE = """\
+Ты — технический писатель. Тебе предоставлены данные об интерфейсе в формате JSON. \
+Проанализируй их и сгенерируй руководство пользователя.\
+"""
+
+DATA_BRIEF_SYSTEM_PROMPT: str = "\n\n".join([_DATA_ROLE, _STYLE_BRIEF, _FORMAT])
+DATA_DETAILED_SYSTEM_PROMPT: str = "\n\n".join([_DATA_ROLE, _STYLE_DETAILED, _FORMAT])
+
+_DATA_PROMPTS: dict[str, str] = {
+    "brief": DATA_BRIEF_SYSTEM_PROMPT,
+    "detailed": DATA_DETAILED_SYSTEM_PROMPT,
+}
+
+
+def get_data_system_prompt(detail_level: str) -> str:
+    return _DATA_PROMPTS.get(detail_level, DATA_BRIEF_SYSTEM_PROMPT)

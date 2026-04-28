@@ -31,7 +31,6 @@ def build_prompt(
     filtered_json: dict,
     language: str,
     detail_level: str,
-    audience: str,
 ) -> str:
     limited_json = _limit_elements(filtered_json, limit=20)
     return (
@@ -39,8 +38,7 @@ def build_prompt(
         "Ответ должен содержать два раздела: MARKDOWN и JSON. "
         "В JSON укажи: title, steps (массив объектов с полями index, title, description).\n\n"
         f"Язык: {language}\n"
-        f"Детализация: {detail_level}\n"
-        f"Аудитория: {audience}\n\n"
+        f"Детализация: {detail_level}\n\n"
         "Данные об интерфейсе (JSON):\n"
         f"{json.dumps(limited_json, ensure_ascii=False)}\n\n"
         "Формат ответа:\n"

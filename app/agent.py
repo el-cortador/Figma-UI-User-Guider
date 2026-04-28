@@ -68,12 +68,54 @@ class ChatClient(Protocol):
 # ---------------------------------------------------------------------------
 
 
+def build_vision_request(language: str, detail_level: str) -> str:
+    """Construct the user message for a vision-based (image upload) agent call."""
+    return (
+        "Проанализируй изображение макета интерфейса и создай руководство пользователя.\n\n"
+        f"Язык руководства: {language}\n"
+        f"Уровень детализации: {detail_level}\n"
+        "Структура:\n- Назначение интерфейса;\n- Порядок шагов;\n- Ожидаемый результат."
+    )
+
+
+def run_vision_agent(
+    image_base64: str,
+    mime_type: str,
+    language: str,
+    detail_level: str,
+    llm: ChatClient,
+    system_prompt: str,
+) -> AgentResult:
+    """Single-turn vision LLM call — no tool loop needed for image uploads."""
+    user_message: dict[str, Any] = {
+        "role": "user",
+        "content": [
+            {
+                "type": "image_url",
+                "image_url": {"url": f"data:{mime_type};base64,{image_base64}"},
+            },
+            {"type": "text", "text": build_vision_request(language, detail_level)},
+        ],
+    }
+
+    response = llm.chat(messages=[user_message], tools=[], system=system_prompt)
+
+    text: str = response["text"]
+    if not text.strip():
+        raise AgentError(
+            "Модель не вернула ответ на изображение. "
+            "Убедитесь, что выбранная модель поддерживает анализ изображений (vision)."
+        )
+
+    markdown, guide_json = parse_llm_output(text)
+    return AgentResult(markdown=markdown, guide_json=guide_json)
+
+
 def build_user_request(
     figma_url: str,
     figma_token: str,
     language: str,
     detail_level: str,
-    audience: str,
 ) -> str:
     """Construct the initial user message for the agent."""
     return (
@@ -82,8 +124,7 @@ def build_user_request(
         f"Токен Figma: {figma_token}\n"
         f"Язык руководства: {language}\n"
         f"Уровень детализации: {detail_level}\n"
-        f"Целевая аудитория: {audience}\n"
-        f"Структура руководства пользователя:\n\n- Назначение интерфейса;\n - Порядок шагов, выполняемых пользователем;\n - Какой возможный результат после выполнения этих шагов."
+        "Структура руководства пользователя:\n\n- Назначение интерфейса;\n - Порядок шагов, выполняемых пользователем;\n - Какой возможный результат после выполнения этих шагов."
     )
 
 
